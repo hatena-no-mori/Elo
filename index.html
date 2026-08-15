@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elo レーティング計算機</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                     "Noto Sans JP", sans-serif;
+        background: #f4f6f8;
+        color: #222;
+    }
+
+    .container {
+        max-width: 850px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 14px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+        margin-top: 0;
+        font-size: 20px;
+    }
+
+    .formula {
+        background: #f1f3f5;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        font-family: "Times New Roman", serif;
+        font-size: 19px;
+        text-align: center;
+    }
+
+    .input-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+
+    .description {
+        font-size: 13px;
+        color: #777;
+        margin-bottom: 6px;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 11px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 16px;
+    }
+
+    input:disabled {
+        background: #eee;
+        color: #888;
+    }
+
+    .calculate-button {
+        width: 100%;
+        margin-top: 20px;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        font-size: 17px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .calculate-button:hover {
+        background: #1d4ed8;
+    }
+
+    .result {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 10px;
+        background: #eef6ff;
+        border: 1px solid #bfdbfe;
+    }
+
+    .result-value {
+        font-size: 30px;
+        font-weight: bold;
+        text-align: center;
+        margin: 10px 0 20px;
+    }
+
+    .expected {
+        text-align: center;
+        font-size: 18px;
+    }
+
+    .error {
+        display: none;
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #fff0f0;
+        color: #b91c1c;
+    }
+
+    .explanation p {
+        line-height: 1.8;
+    }
+
+    .variable {
+        font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+        .input-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Elo レーティング計算機</h1>
+    <p class="subtitle">
+        Eloレーティングに関係する数値を計算します
+    </p>
+
+    <div class="card">
+        <h2>計算式</h2>
+
+        <div class="formula">
+            Rn = Ro + K × (W − We)
+        </div>
+
+        <div class="formula">
+            We = 1 / (1 + 10<sup>(Rc − Ro) / 400</sup>)
+        </div>
+
+        <p>
+            <strong>We</strong>（期待勝率）は、試合前のレーティング
+            <strong>Ro</strong> と相手のレーティング
+            <strong>Rc</strong> から自動的に計算されます。
+        </p>
+    </div>
+
+
+    <div class="card">
+        <h2>計算する値</h2>
+
+        <select id="unknown">
+            <option value="Rn">Rn（試合後のレーティング）</option>
+            <option value="Ro">Ro（試合前のレーティング）</option>
+            <option value="K">K（変動係数）</option>
+            <option value="W">W（試合結果）</option>
+            <option value="Rc">Rc（相手のレーティング）</option>
+        </select>
+
+        <p class="description">
+            選択した値を未知数として計算します。
+        </p>
+    </div>
+
+
+    <div class="card">
+        <h2>数値を入力</h2>
+
+        <div class="input-grid">
+
+            <div class="input-group">
+                <label for="Rn">Rn</label>
+                <div class="description">試合後のレーティング</div>
+                <input id="Rn" type="number" step="any">
+            </div>
+
+            <div class="input-group">
+                <label for="Ro">Ro</label>
+                <div class="description">試合前のレーティング</div>
+                <input id="Ro" type="number" step="any">
+            </div>
+
+            <div class="input-group">
+                <label for="K">K</label>
+                <div class="description">レーティングの変動幅を決める係数</div>
+                <input id="K" type="number" step="any" min="0">
+            </div>
+
+            <div class="input-group">
+                <label for="W">W</label>
+                <div class="description">勝利=1、引き分け=0.5、敗北=0</div>
+                <input id="W" type="number" step="0.5" min="0" max="1">
+            </div>
+
+            <div class="input-group">
+                <label for="Rc">Rc</label>
+                <div class="description">相手の試合前レーティング</div>
+                <input id="Rc" type="number" step="any">
+            </div>
+
+        </div>
+
+        <button class="calculate-button" onclick="calculate()">
+            計算する
+        </button>
+
+        <div id="error" class="error"></div>
+
+        <div id="result" class="result">
+            <h2>計算結果</h2>
+
+            <div id="resultValue" class="result-value"></div>
+
+            <div class="expected">
+                期待勝率 We：
+                <strong id="weResult"></strong>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card explanation">
+        <h2>Eloレーティングとは？</h2>
+
+        <p>
+            Eloレーティングは、対戦結果をもとにプレイヤーやチームの
+            強さを数値化する仕組みです。
+        </p>
+
+        <p>
+            試合前のレーティングと相手のレーティングから
+            <strong>「この試合でどのくらい勝つと予想されるか」</strong>
+            を期待勝率（We）として計算します。
+        </p>
+
+        <p>
+            実際の結果が期待より良ければレーティングは上昇し、
+            期待より悪ければ低下します。
+        </p>
+
+        <h2>各変数について</h2>
+
+        <p>
+            <span class="variable">Rn</span>：
+            試合後のレーティングです。
+        </p>
+
+        <p>
+            <span class="variable">Ro</span>：
+            試合前のレーティングです。
+        </p>
+
+        <p>
+            <span class="variable">K</span>：
+            レーティングがどの程度変動するかを決める係数です。
+            Kが大きいほど、1試合によるレーティングの変化も大きくなります。
+        </p>
+
+        <p>
+            <span class="variable">W</span>：
+            実際の試合結果を数値化したものです。
+            勝利は1、引き分けは0.5、敗北は0です。
+        </p>
+
+        <p>
+            <span class="variable">Rc</span>：
+            対戦相手の試合前レーティングです。
+        </p>
+
+        <p>
+            <span class="variable">We</span>：
+            試合前のレーティングから計算した期待勝率です。
+            自分のレーティングが相手より高いほどWeは高くなり、
+            相手より低いほどWeは低くなります。
+        </p>
+    </div>
+
+</div>
+
+
+<script>
+
+function getValue(id) {
+    return parseFloat(document.getElementById(id).value);
+}
+
+function calculate() {
+
+    const unknown = document.getElementById("unknown").value;
+
+    let Rn = getValue("Rn");
+    let Ro = getValue("Ro");
+    let K  = getValue("K");
+    let W  = getValue("W");
+    let Rc = getValue("Rc");
+
+    const error = document.getElementById("error");
+    const result = document.getElementById("result");
+
+    error.style.display = "none";
+    result.style.display = "none";
+
+    function showError(message) {
+        error.textContent = message;
+        error.style.display = "block";
+    }
+
+    // --------------------------
+    // Rnを求める
+    // --------------------------
+    if (unknown === "Rn") {
+
+        if (![Ro, K, W, Rc].every(Number.isFinite)) {
+            showError("Ro、K、W、Rcをすべて入力してください。");
+            return;
+        }
+
+        const We = 1 / (1 + Math.pow(10, (Rc - Ro) / 400));
+
+        Rn = Ro + K * (W - We);
+        showResult(Rn, We);
+        return;
+    }
+
+
+    // --------------------------
+    // Roを求める
+    // --------------------------
+    if (unknown === "Ro") {
+
+        if (![Rn, K, W, Rc].every(Number.isFinite)) {
+            showError("Rn、K、W、Rcをすべて入力してください。");
+            return;
+        }
+
+        if (K === 0) {
+            showError("Kが0の場合、Roを一意に求めることができません。");
+            return;
+        }
+
+        // f(Ro) = Ro + K(W-We) - Rn
+        function f(x) {
+            const We = 1 / (1 + Math.pow(10, (Rc - x) / 400));
+            return x + K * (W - We) - Rn;
+        }
+
+        // 二分法で解く
+        let low = -10000;
+        let high = 10000;
+
+        let fLow = f(low);
+        let fHigh = f(high);
+
+        if (fLow * fHigh > 0) {
+            showError("指定された条件ではRoを求められませんでした。");
+            return;
+        }
+
+        for (let i = 0; i < 200; i++) {
+
+            const mid = (low + high) / 2;
+            const fMid = f(mid);
+
+            if (Math.abs(fMid) < 1e-10) {
+                low = mid;
+                high = mid;
+                break;
+            }
+
+            if (fLow * fMid <= 0) {
+                high = mid;
+                fHigh = fMid;
+            } else {
+                low = mid;
+                fLow = fMid;
+            }
+        }
+
+        Ro = (low + high) / 2;
+
+        const We = 1 / (1 + Math.pow(10, (Rc - Ro) / 400));
+
+        showResult(Ro, We);
+        return;
+    }
+
+
+    // --------------------------
+    // Kを求める
+    // --------------------------
+    if (unknown === "K") {
+
+        if (![Rn, Ro, W, Rc].every(Number.isFinite)) {
+            showError("Rn、Ro、W、Rcをすべて入力してください。");
+            return;
+        }
+
+        const We = 1 / (1 + Math.pow(10, (Rc - Ro) / 400));
+        const denominator = W - We;
+
+        if (Math.abs(denominator) < 1e-12) {
+            showError("WとWeが等しいため、Kを一意に求めることができません。");
+            return;
+        }
+
+        K = (Rn - Ro) / denominator;
+
+        showResult(K, We);
+        return;
+    }
+
+
+    // --------------------------
+    // Wを求める
+    // --------------------------
+    if (unknown === "W") {
+
+        if (![Rn, Ro, K, Rc].every(Number.isFinite)) {
+            showError("Rn、Ro、K、Rcをすべて入力してください。");
+            return;
+        }
+
+        if (K === 0) {
+            showError("Kが0の場合、Wを求めることができません。");
+            return;
+        }
+
+        const We = 1 / (1 + Math.pow(10, (Rc - Ro) / 400));
+
+        W = We + (Rn - Ro) / K;
+
+        if (W < 0 || W > 1) {
+            showError(
+                "計算結果のWが0～1の範囲外です。入力された値の組み合わせを確認してください。"
+            );
+            return;
+        }
+
+        showResult(W, We);
+        return;
+    }
+
+
+    // --------------------------
+    // Rcを求める
+    // --------------------------
+    if (unknown === "Rc") {
+
+        if (![Rn, Ro, K, W].every(Number.isFinite)) {
+            showError("Rn、Ro、K、Wをすべて入力してください。");
+            return;
+        }
+
+        if (K === 0) {
+            showError("Kが0の場合、Rcを求めることができません。");
+            return;
+        }
+
+        const We = W - (Rn - Ro) / K;
+
+        if (We <= 0 || We >= 1) {
+            showError(
+                "計算された期待勝率Weが0～1の範囲外になるため、Rcを求められません。"
+            );
+            return;
+        }
+
+        Rc = Ro + 400 * Math.log10(1 / We - 1);
+
+        showResult(Rc, We);
+        return;
+    }
+}
+
+
+// 結果を表示
+function showResult(value, We) {
+
+    document.getElementById("resultValue").textContent =
+        formatNumber(value);
+
+    document.getElementById("weResult").textContent =
+        (We * 100).toFixed(4) + "%";
+
+    document.getElementById("result").style.display = "block";
+}
+
+
+// 数値を見やすくする
+function formatNumber(value) {
+
+    if (Math.abs(value) >= 1000) {
+        return value.toFixed(2);
+    }
+
+    return value.toFixed(4).replace(/\.?0+$/, "");
+}
+
+
+// 未知数を選択したら、その入力欄を無効化
+document.getElementById("unknown").addEventListener("change", function() {
+
+    const variables = ["Rn", "Ro", "K", "W", "Rc"];
+
+    variables.forEach(function(variable) {
+
+        const input = document.getElementById(variable);
+
+        if (variable === this.value) {
+            input.disabled = true;
+            input.value = "";
+        } else {
+            input.disabled = false;
+        }
+    });
+
+    document.getElementById("result").style.display = "none";
+    document.getElementById("error").style.display = "none";
+});
+
+
+// 初期状態
+document.getElementById("unknown").dispatchEvent(
+    new Event("change")
+);
+
+</script>
+
+</body>
+</html>
