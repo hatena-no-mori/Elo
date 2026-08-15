@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Elo レーティング計算機</title>
+<title>Elo 計算機</title>
 
 <style>
     * {
@@ -175,53 +175,56 @@
         <h2>計算する値</h2>
 
         <select id="unknown">
-            <option value="Rn">Rn（試合後のレーティング）</option>
-            <option value="Ro">Ro（試合前のレーティング）</option>
+           <option value="Ro">Ro（自分:試合前のElo）</option>
+           <option value="Rc">Rc（相手:試合前のElo）</option> 
+           <option value="Rn">Rn（自分:試合後のElo）</option>
             <option value="K">K（変動係数）</option>
-            <option value="W">W（試合結果）</option>
-            <option value="Rc">Rc（相手のレーティング）</option>
+            <option value="W">W（試合結果 勝ちは1.0, 引き分けは0.5, 負けは0として計算します。）</option>
+            
         </select>
 
         <p class="description">
-            選択した値を未知数として計算します。
+            選択したものを計算します。
         </p>
     </div>
 
 
     <div class="card">
-        <h2>数値を入力</h2>
+        <h2>数値の入力</h2>
 
         <div class="input-grid">
-
-            <div class="input-group">
-                <label for="Rn">Rn</label>
-                <div class="description">試合後のレーティング</div>
-                <input id="Rn" type="number" step="any">
-            </div>
-
-            <div class="input-group">
+           <div class="input-group">
                 <label for="Ro">Ro</label>
-                <div class="description">試合前のレーティング</div>
+                <div class="description">自分:試合前のElo</div>
                 <input id="Ro" type="number" step="any">
             </div>
 
+           
+            <div class="input-group">
+                <label for="Rc">Rc</label>
+                <div class="description">相手:試合前のElo</div>
+                <input id="Rc" type="number" step="any">
+            </div>
+
+            <div class="input-group">
+                <label for="Rn">Rn</label>
+                <div class="description">自分:試合後のElo</div>
+                <input id="Rn" type="number" step="any">
+            </div>
+
+            
             <div class="input-group">
                 <label for="K">K</label>
-                <div class="description">レーティングの変動幅を決める係数</div>
+                <div class="description">変動係数</div>
                 <input id="K" type="number" step="any" min="0">
             </div>
 
             <div class="input-group">
                 <label for="W">W</label>
-                <div class="description">勝利=1、引き分け=0.5、敗北=0</div>
+                <div class="description">試合結果 勝ちは1.0, 引き分けは0.5, 負けは0として計算します。</div>
                 <input id="W" type="number" step="0.5" min="0" max="1">
             </div>
 
-            <div class="input-group">
-                <label for="Rc">Rc</label>
-                <div class="description">相手の試合前レーティング</div>
-                <input id="Rc" type="number" step="any">
-            </div>
 
         </div>
 
@@ -245,57 +248,58 @@
 
 
     <div class="card explanation">
-        <h2>Eloレーティングとは？</h2>
+        <h2>Eloとは？</h2>
 
         <p>
-            Eloレーティングは、対戦結果をもとにプレイヤーやチームの
+            Eloは対戦結果をもとにプレイヤーの
             強さを数値化する仕組みです。
         </p>
 
         <p>
-            試合前のレーティングと相手のレーティングから
-            <strong>「この試合でどのくらい勝つと予想されるか」</strong>
-            を期待勝率（We）として計算します。
+            試合前のEloと相手のEloから
+            <strong>「この試合でどれくらい勝つと予想されるか」</strong>
+            を期待勝率(We)として計算します。
         </p>
 
         <p>
-            実際の結果が期待より良ければレーティングは上昇し、
-            期待より悪ければ低下します。
+            実際の結果が期待より良ければEloはあがり、
+            期待より悪ければさがります。
         </p>
 
         <h2>各変数について</h2>
 
         <p>
-            <span class="variable">Rn</span>：
-            試合後のレーティングです。
+            <span class="variable">Ro</span>：
+            試合前のEloです。
+        </p>
+        <p>
+            <span class="variable">Rc</span>：
+            対戦相手の試合前のEloです。
         </p>
 
         <p>
-            <span class="variable">Ro</span>：
-            試合前のレーティングです。
+            <span class="variable">Rn</span>：
+            試合後のEloです。
         </p>
+
 
         <p>
             <span class="variable">K</span>：
-            レーティングがどの程度変動するかを決める係数です。
-            Kが大きいほど、1試合によるレーティングの変化も大きくなります。
+            Eloがどの程度変わるかを決める係数です。
+            Kが大きいほど、1試合で変わるEloも大きくなります。
         </p>
 
         <p>
             <span class="variable">W</span>：
             実際の試合結果を数値化したものです。
-            勝利は1、引き分けは0.5、敗北は0です。
+            勝ちは1.0, 引き分けは0.5, 負けは0です。
         </p>
 
-        <p>
-            <span class="variable">Rc</span>：
-            対戦相手の試合前レーティングです。
-        </p>
 
         <p>
             <span class="variable">We</span>：
-            試合前のレーティングから計算した期待勝率です。
-            自分のレーティングが相手より高いほどWeは高くなり、
+            試合前のEloから計算した期待勝率です。
+            自分のEloが相手より高いほどWeは高くなり、
             相手より低いほどWeは低くなります。
         </p>
     </div>
