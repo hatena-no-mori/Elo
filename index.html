@@ -621,10 +621,23 @@ if (unknown === "W") {
 
 
 // 結果を表示
-function showResult(value, We, confidence = null) {
+   function showResult(value, We, confidence = null) {
 
-    document.getElementById("resultValue").textContent =
-        formatNumber(value);
+    const unknown = document.getElementById("unknown").value;
+
+    // Elo値（Ro・Rc・Rn）は整数にする
+    if (unknown === "Ro" || unknown === "Rc" || unknown === "Rn") {
+        document.getElementById("resultValue").textContent =
+            Math.round(value);
+    } else if (unknown === "W") {
+        // Wは0、0.5、1
+        document.getElementById("resultValue").textContent =
+            value;
+    } else {
+        // Kなどは通常の表示
+        document.getElementById("resultValue").textContent =
+            formatNumber(value);
+    }
 
     document.getElementById("weResult").textContent =
         (We * 100).toFixed(4) + "%";
