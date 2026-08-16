@@ -440,36 +440,148 @@ function calculate() {
     }
 
 
-    // --------------------------
-    // Wを求める
-    // --------------------------
-    if (unknown === "W") {
+// --------------------------
+// Wを求める
+// --------------------------
+if (unknown === "W") {
 
-        if (![Rn, Ro, K, Rc].every(Number.isFinite)) {
-            showError("Rn、Ro、K、Rcをすべて入力してください。");
-            return;
-        }
-
-        if (K === 0) {
-            showError("Kが0の場合、Wを求めることができません。");
-            return;
-        }
-
-        const We = 1 / (1 + Math.pow(10, (Rc - Ro) / 400));
-
-        W = We + (Rn - Ro) / K;
-
-        if (W < 0 || W > 1) {
-            showError(
-                "計算結果のWが0～1の範囲外です。入力された値の組み合わせを確認してください。"
-            );
-            return;
-        }
-
-        showResult(W, We);
+    if (![Rn, Ro, K, Rc].every(Number.isFinite)) {
+        showError("Rn、Ro、K、Rcをすべて入力してください。");
         return;
     }
 
+    if (K === 0) {
+        showError("Kが0の場合、Wを求めることができません。");
+        return;
+    }
+
+    const We = 1 / (1 + Math.pow(10, (Rc - Ro) / 400));
+
+    // --------------------------------
+    // 指定したWが、誤差E以内で成立可能か
+    // --------------------------------
+    function possible(E, targetW) {
+
+        // Ro' と Rc' を E の範囲で動かしたときに、
+        // Rn' が [Rn-E, Rn+E] に入るかを調べる。
+        //
+        // WeはRoとRcから計算されるため、
+        // Ro' とRc'の組み合わせによって
+        // 必要なRn'が変化する。
+
+        const points = [
+            Ro - E, Ro + E
+        ];
+
+        const rcPoints = [
+            Rc - E, Rc + E
+        ];
+
+        // 関数
+        function requiredRn(ro, rc) {
+            const we = 1 / (1 + Math.pow(10, (rc - ro) / 400));
+            return ro + K * (targetW - we);
+        }
+
+        // Rnを最小・最大にできる可能性を調べる。
+        //
+        // この関数は滑らかなので、端点と
+        // 内部の代表点を調べる。
+        const roValues = [
+            Ro - E,
+            Ro,
+            Ro + E
+        ];
+
+        const rcValues = [
+            Rc - E,
+            Rc,
+            Rc + E
+        ];
+
+        let minRn = Infinity;
+        let maxRn = -Infinity;
+
+        for (const ro2 of roValues) {
+            for (const rc2 of rcValues) {
+
+                const required = requiredRn(ro2, rc2);
+
+                minRn = Math.min(minRn, required);
+                maxRn = Math.max(maxRn, required);
+            }
+        }
+
+        // 実際のRnが±Eの範囲にあるか
+        const actualMin = Rn - E;
+        const actualMax = Rn + E;
+
+        return (
+            maxRn >= actualMin &&
+            minRn <= actualMax
+        );
+    }
+
+
+    // --------------------------------
+    // Wごとに必要な最小丸め誤差を求める
+    // --------------------------------
+    function findRequiredError(targetW) {
+
+        let low = 0;
+        let high = 100;
+
+        // 2^8 = 256分割
+        // したがって8回二分探索する
+        for (let i = 0; i < 8; i++) {
+
+            const mid = (low + high) / 2;
+
+            if (possible(mid, targetW)) {
+                high = mid;
+            } else {
+                low = mid;
+            }
+        }
+
+        return high;
+    }
+
+
+    // --------------------------------
+    // W = 0 / 0.5 / 1 を比較
+    // --------------------------------
+    const candidates = [0, 0.5, 1];
+
+    const requiredErrors = candidates.map(targetW => ({
+        W: targetW,
+        error: findRequiredError(targetW)
+    }));
+
+
+    // 最小の丸め誤差を持つWを採用
+    const best = requiredErrors.reduce((a, b) =>
+        b.error < a.error ? b : a
+    );
+
+    W = best.W;
+
+
+    // --------------------------------
+    // 信用度
+    // --------------------------------
+    //
+    // 必要な丸め誤差が小さいほど信用度が高い。
+    // E = 10 Elo → 50%
+    //
+    const confidence =
+        100 * Math.pow(2, -best.error / 10);
+
+
+    showResult(W, We, confidence);
+
+    return;
+}
 
     // --------------------------
     // Rcを求める
@@ -504,7 +616,7 @@ function calculate() {
 
 
 // 結果を表示
-function showResult(value, We) {
+function showResult(value, We, confidence = null) {
 
     document.getElementById("resultValue").textContent =
         formatNumber(value);
@@ -512,9 +624,13 @@ function showResult(value, We) {
     document.getElementById("weResult").textContent =
         (We * 100).toFixed(4) + "%";
 
+    if (confidence !== null) {
+        document.getElementById("confidenceResult").textContent =
+            confidence.toFixed(1) + "%";
+    }
+
     document.getElementById("result").style.display = "block";
 }
-
 
 // 数値を見やすくする
 function formatNumber(value) {
