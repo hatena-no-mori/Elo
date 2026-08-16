@@ -629,14 +629,20 @@ function showResult(value, We, confidence = null) {
     document.getElementById("weResult").textContent =
         (We * 100).toFixed(4) + "%";
 
+    const confidenceArea =
+        document.getElementById("confidenceArea");
+
     if (confidence !== null) {
         document.getElementById("confidenceResult").textContent =
             confidence.toFixed(1) + "%";
+
+        confidenceArea.style.display = "block";
+    } else {
+        confidenceArea.style.display = "none";
     }
 
     document.getElementById("result").style.display = "block";
 }
-
 // 数値を見やすくする
 function formatNumber(value) {
 
